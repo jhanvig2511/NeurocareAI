@@ -1,0 +1,75 @@
+.admin-layout {
+  display: flex;
+  height: 100vh;
+  background: #fafaf8;
+  font-family: Mulish, sans-serif;
+}
+
+.admin-sidebar {
+  width: 240px;
+  background: #2f6f62;
+  color: white;
+  padding: 20px;
+}
+
+.admin-sidebar h2 {
+  margin-bottom: 30px;
+}
+
+.admin-sidebar p {
+  cursor: pointer;
+  margin: 12px 0;
+  opacity: 0.9;
+}
+
+.admin-sidebar .active {
+  font-weight: bold;
+  opacity: 1;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+}
+
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.admin-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.admin-card.danger {
+  background: #ffe4e6;
+}
+
+.emotion-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 15px 0;
+}
+
+table {
+  width: 100%;
+  background: white;
+  border-radius: 10px;
+  margin-top: 15px;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+}
+
+thead {
+  background: #e5f4ef;
+}

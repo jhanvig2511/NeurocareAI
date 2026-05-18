@@ -1,0 +1,35 @@
+.admin-dashboard {
+  padding: 30px;
+  background: #f9fafb;
+  min-height: 100vh;
+}
+
+.admin-dashboard h1 {
+  color: #0f766e;
+  margin-bottom: 20px;
+}
+
+.admin-cards {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: 200px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.card h3 {
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.admin-section {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+}

@@ -1,0 +1,22 @@
+:root {
+  --bg-main: #FAFAF8;
+  --primary: #6FA8A1;
+  --secondary: #E6DCCF;
+  --text-main: #2E2E2E;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Mulish", sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+}
+
+h1, h2, h3 {
+  font-family: "Lora", serif;
+}

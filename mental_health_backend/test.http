@@ -1,0 +1,7 @@
+POST https://neurocare-production.up.railway.app/api/chat
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "message": "I am feeling sad today"
+}

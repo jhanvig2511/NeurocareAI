@@ -1,0 +1,13 @@
+.profile-container {
+  padding: 40px;
+  background: #f6f7f5;
+  min-height: 100vh;
+}
+
+.profile-container input,
+.profile-container select,
+.profile-container textarea {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+}

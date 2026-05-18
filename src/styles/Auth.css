@@ -1,0 +1,33 @@
+.auth-container {
+  height: 100vh;
+  background: linear-gradient(#e6f4f1, #ffffff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-container input {
+  width: 280px;
+  padding: 12px;
+  margin: 8px;
+}
+
+.auth-container button {
+  width: 280px;
+  padding: 12px;
+  margin-top: 10px;
+  background: #14b8a6;
+  color: white;
+  border: none;
+}
+
+.secondary {
+  background: #e75480;
+}
+
+.link {
+  margin-top: 15px;
+  color: #0f766e;
+  cursor: pointer;
+}
