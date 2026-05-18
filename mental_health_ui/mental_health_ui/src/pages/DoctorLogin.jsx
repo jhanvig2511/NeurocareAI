@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import CONFIG from "../config";
+
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || "https://neurocareai-xxrl.onrender.com";
 
 function DoctorLogin() {
   const [email, setEmail] = useState("");
@@ -17,22 +18,15 @@ function DoctorLogin() {
 
     try {
       const res = await axios.post(
-        `${CONFIG.BASE_URL}/api/therapist/doctor-login`,
-        {
-          email,
-          password,
-        }
+        `${BASE_URL}/api/therapist/doctor-login`,
+        { email, password }
       );
 
       if (res.data.success) {
-        localStorage.setItem(
-          "doctor",
-          JSON.stringify(res.data.doctor)
-        );
-
-        navigate("/doctor-dashboard");
+        localStorage.setItem("doctor", JSON.stringify(res.data.doctor));
+        navigate("/doctor");
       } else {
-        setError("Invalid login credentials");
+        setError("Invalid email or password");
       }
     } catch (err) {
       console.log(err);
@@ -43,8 +37,8 @@ function DoctorLogin() {
   };
 
   return (
-    <div style={{ padding: "40px", maxWidth: "400px" }}>
-      <h1>Doctor Login</h1>
+    <div style={{ padding: "40px", maxWidth: "400px", margin: "auto" }}>
+      <h1>🩺 Doctor Login</h1>
 
       {error && (
         <p style={{ color: "red" }}>{error}</p>
@@ -55,7 +49,7 @@ function DoctorLogin() {
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        style={{ display: "block", marginBottom: "10px", width: "100%" }}
+        style={{ display: "block", marginBottom: "10px", width: "100%", padding: "8px" }}
       />
 
       <input
@@ -63,17 +57,13 @@ function DoctorLogin() {
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        style={{ display: "block", marginBottom: "10px", width: "100%" }}
+        style={{ display: "block", marginBottom: "10px", width: "100%", padding: "8px" }}
       />
 
       <button
         onClick={login}
         disabled={loading}
-        style={{
-          padding: "10px",
-          width: "100%",
-          cursor: "pointer",
-        }}
+        style={{ padding: "10px", width: "100%", cursor: "pointer" }}
       >
         {loading ? "Logging in..." : "Login"}
       </button>
