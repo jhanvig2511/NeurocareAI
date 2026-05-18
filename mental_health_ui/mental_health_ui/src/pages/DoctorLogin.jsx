@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || "https://neurocareai-xxrl.onrender.com";
-
 function DoctorLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,7 +16,7 @@ function DoctorLogin() {
 
     try {
       const res = await axios.post(
-        `${BASE_URL}/api/therapist/doctor-login`,
+        "https://neurocareai-xxrl.onrender.com/api/therapist/doctor-login",
         { email, password }
       );
 
@@ -40,9 +38,7 @@ function DoctorLogin() {
     <div style={{ padding: "40px", maxWidth: "400px", margin: "auto" }}>
       <h1>🩺 Doctor Login</h1>
 
-      {error && (
-        <p style={{ color: "red" }}>{error}</p>
-      )}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       <input
         type="email"
