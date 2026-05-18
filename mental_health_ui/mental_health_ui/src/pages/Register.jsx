@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../styles/register.css";
 
-const BASE_URL = "https://neurocare-backend-3k89.onrender.com";
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || "https://neurocareai-xxrl.onrender.com";
 
 export default function Register() {
   const navigate = useNavigate();
