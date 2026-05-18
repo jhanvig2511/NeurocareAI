@@ -13,7 +13,7 @@ function TherapistChat() {
     const fetchMessages = async () => {
       try {
         const res = await axios.get(
-          `${CONFIG.BASE_URL}/api/therapist/messages/${sessionId}`
+          `${CONFIG.BACKEND_URL}/api/therapist/messages/${sessionId}`
         );
         setMessages(res.data);
       } catch (err) {
@@ -33,7 +33,7 @@ function TherapistChat() {
 
     try {
       await axios.post(
-        `${CONFIG.BASE_URL}/api/therapist/message`,
+        `${CONFIG.BACKEND_URL}/api/therapist/message`,
         {
           session_id: sessionId,
           sender: "user",
