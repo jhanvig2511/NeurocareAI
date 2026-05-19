@@ -13,26 +13,21 @@ const app = express();
 const server = http.createServer(app);
 
 /* =======================
-   ENV
+   ALLOWED ORIGINS
 ======================= */
-// ✅ FIX: credentials:true is incompatible with wildcard "*" origin.
-// FRONTEND_URL must be the exact deployed frontend URL.
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://neurocare-git-main-jhanvi-gupta-s-projects.vercel.app";
-
-/* =======================
-   MIDDLEWARE
-======================= */
-// ✅ FIX: Support multiple allowed origins (local dev + production)
 const allowedOrigins = [
-  FRONTEND_URL,
+  "https://neurocare-ai-theta.vercel.app",
+  "https://neurocare-git-main-jhanvi-gupta-s-projects.vercel.app",
   "http://localhost:3000",
   "http://localhost:3001",
 ];
 
+/* =======================
+   MIDDLEWARE
+======================= */
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (e.g., mobile apps, Postman)
       if (!origin) return callback(null, true);
       if (allowedOrigins.indexOf(origin) !== -1) {
         return callback(null, true);
@@ -113,19 +108,17 @@ app.get("/", (req, res) => {
 ======================= */
 app.get("/users", (req, res) => {
   const sql = "SELECT * FROM users";
-
   db.query(sql, (err, results) => {
     if (err) {
       console.error("DB Error:", err.message);
       return res.status(500).json({ message: "Error fetching users" });
     }
-
     res.json(results);
   });
 });
 
 /* =======================
-   START SERVER (RAILWAY)
+   START SERVER
 ======================= */
 const PORT = process.env.PORT || 8080;
 
