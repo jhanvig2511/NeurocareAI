@@ -3,7 +3,6 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const db = require("./db");
-
 const http = require("http");
 const { Server } = require("socket.io");
 
@@ -19,18 +18,14 @@ const allowedOrigins = [
   "http://localhost:3001",
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        return callback(null, true);
-      }
-      return callback(new Error("CORS not allowed for: " + origin));
-    },
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+    return callback(new Error("CORS not allowed for: " + origin));
+  },
+  credentials: true,
+}));
 
 app.use(bodyParser.json());
 
@@ -50,8 +45,8 @@ io.on("connection", (socket) => {
     console.log(`Doctor ${doctorId} Online`);
   });
 
-  // ✅ FIX: sessionId aur therapistName bhi forward ho raha hai
   socket.on("bookSession", ({ doctorId, user, sessionId, therapistName }) => {
+    console.log("bookSession received:", { doctorId, user, sessionId });
     io.to(doctorId).emit("newBooking", {
       message: `${user} booked a session`,
       doctorId,
@@ -100,7 +95,6 @@ app.get("/users", (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
