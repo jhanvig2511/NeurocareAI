@@ -4,7 +4,7 @@ import axios from "axios";
 import "../styles/login.css";
 
 /* 🌐 BACKEND URL */
-const BASE_URL = "https://neurocare-backend-3k89.onrender.com";
+const BASE_URL = "https://neurocareai-xxrl.onrender.com";
 
 function LoginUser() {
   const navigate = useNavigate();
