@@ -16,7 +16,7 @@ function DoctorLogin() {
 
     try {
       const res = await axios.post(
-      "https://neurocareai-xxrl.onrender.com.app/api/therapist/doctor-login",
+        "https://neurocareai-xxrl.onrender.com/api/therapist/doctor-login",
         { email, password },
         { withCredentials: true }
       );
