@@ -11,9 +11,13 @@ function DoctorPanel() {
 
   useEffect(() => {
     if (doctor) {
+      console.log("Doctor ID:", doctor.id);
+      console.log("Doctor ID type:", typeof doctor.id);
+
       socket.emit("doctorOnline", String(doctor.id));
 
       socket.on("newBooking", (data) => {
+        console.log("Booking received:", data);
         setBookings((prev) => [...prev, data]);
       });
     }
@@ -39,7 +43,6 @@ function DoctorPanel() {
         <p><strong>Available Time:</strong> {doctor?.slots}</p>
       </div>
 
-      {/* BOOKING NOTIFICATIONS */}
       <div style={{ marginTop: "30px" }}>
         <h3>📋 Incoming Bookings</h3>
 
