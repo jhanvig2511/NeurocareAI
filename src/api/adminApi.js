@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API = "https://neurocare-production.up.railway.app";
+const API = "https://neurocareai-xxrl.onrender.com";
 
 export const adminLogin = (data) =>
   axios.post(`${API}/admin/login`, data);

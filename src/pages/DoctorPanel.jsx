@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { io } from "socket.io-client";
 
-const socket = io("https://neurocare-production.up.railway.app");
+const socket = io("https://neurocareai-xxrl.onrender.com");
 
 function DoctorPanel() {
 

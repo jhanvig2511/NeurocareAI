@@ -6,7 +6,7 @@ import "../styles/adminDashboard.css";
    🔥 PRODUCTION API URL
 ======================= */
 const API_BASE =
-  "https://neurocare-production.up.railway.app";
+  "https://neurocareai-xxrl.onrender.com";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();

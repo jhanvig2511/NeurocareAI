@@ -24,7 +24,7 @@ router.get("/", (req, res) => {
 /* =========================
    DOCTOR LOGIN
 ========================= */
-router.post("/doctor-login", (req, res) => {
+router.post("/doctor-login", async (req, res)  => {
 
   const { email, password } = req.body;
 

@@ -1,4 +1,4 @@
-POST https://neurocare-production.up.railway.app/api/chat
+POST https://neurocareai-xxrl.onrender.com/api/chat
 Content-Type: application/json
 
 {

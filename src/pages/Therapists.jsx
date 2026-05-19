@@ -5,7 +5,7 @@ import { io } from "socket.io-client";
 import "../styles/therapist.css";
 
 /* 🔥 PRODUCTION BACKEND URL */
-const BASE_URL = "https://neurocare-production.up.railway.app";
+const BASE_URL = "https://neurocareai-xxrl.onrender.com";
 
 /* SOCKET CONNECTION */
 const socket = io(BASE_URL);
