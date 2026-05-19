@@ -1,75 +1,137 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
-import CONFIG from "../config";
+import { io } from "socket.io-client";
+
+const BASE_URL = "https://neurocareai-xxrl.onrender.com";
+const socket = io(BASE_URL);
 
 function TherapistChat() {
   const { sessionId } = useParams();
-
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const bottomRef = useRef(null);
+
+  const doctor = JSON.parse(localStorage.getItem("doctor"));
+  const user = JSON.parse(localStorage.getItem("user"));
+  const sender = doctor ? "doctor" : "user";
 
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const res = await axios.get(
-          `${CONFIG.BASE_URL}/api/therapist/messages/${sessionId}`
-        );
-        setMessages(res.data);
-      } catch (err) {
-        console.log(err);
-      }
-    };
+    socket.emit("joinRoom", sessionId);
+
+    socket.on("receiveMessage", (data) => {
+      setMessages((prev) => [...prev, data]);
+    });
 
     fetchMessages();
 
-    const interval = setInterval(fetchMessages, 2000);
-
-    return () => clearInterval(interval);
+    return () => {
+      socket.off("receiveMessage");
+    };
   }, [sessionId]);
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
+  const fetchMessages = async () => {
     try {
-      await axios.post(
-        `${CONFIG.BASE_URL}/api/therapist/message`,
-        {
-          session_id: sessionId,
-          sender: "user",
-          message: input,
-        }
-      );
-
-      setInput("");
+      const res = await axios.get(`${BASE_URL}/api/therapist/messages/${sessionId}`);
+      setMessages(res.data);
     } catch (err) {
       console.log(err);
     }
   };
 
-  return (
-    <div className="chat-container">
-      <h2>💬 Therapist Chat</h2>
+  const sendMessage = async () => {
+    if (!input.trim()) return;
 
-      <div className="chat-box">
+    const msgData = {
+      roomId: sessionId,
+      session_id: sessionId,
+      sender: sender,
+      message: input,
+    };
+
+    socket.emit("sendMessage", msgData);
+
+    try {
+      await axios.post(`${BASE_URL}/api/therapist/message`, {
+        session_id: sessionId,
+        sender: sender,
+        message: input,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+
+    setInput("");
+  };
+
+  return (
+    <div style={{ maxWidth: "600px", margin: "40px auto", fontFamily: "sans-serif" }}>
+      <h2>💬 Therapist Chat</h2>
+      <p style={{ color: "gray" }}>Session: {sessionId}</p>
+
+      <div style={{
+        height: "400px",
+        overflowY: "auto",
+        border: "1px solid #ddd",
+        borderRadius: "10px",
+        padding: "15px",
+        background: "#f9f9f9",
+        marginBottom: "15px"
+      }}>
         {messages.map((msg, index) => (
-          <div
-            key={msg.id || index}
-            className={msg.sender === "user" ? "user-msg" : "doctor-msg"}
-          >
-            {msg.message}
+          <div key={msg.id || index} style={{
+            display: "flex",
+            justifyContent: msg.sender === sender ? "flex-end" : "flex-start",
+            marginBottom: "10px"
+          }}>
+            <div style={{
+              background: msg.sender === sender ? "#4CAF50" : "#fff",
+              color: msg.sender === sender ? "white" : "black",
+              padding: "10px 15px",
+              borderRadius: "15px",
+              maxWidth: "70%",
+              border: "1px solid #ddd"
+            }}>
+              <small style={{ opacity: 0.7 }}>{msg.sender === "doctor" ? "👩‍⚕️ Doctor" : "🧑 Patient"}</small>
+              <p style={{ margin: "5px 0 0 0" }}>{msg.message}</p>
+            </div>
           </div>
         ))}
+        <div ref={bottomRef} />
       </div>
 
-      <div className="chat-input">
+      <div style={{ display: "flex", gap: "10px" }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           placeholder="Type message..."
+          style={{
+            flex: 1,
+            padding: "12px",
+            borderRadius: "8px",
+            border: "1px solid #ddd",
+            fontSize: "16px"
+          }}
         />
-
-        <button onClick={sendMessage}>Send</button>
+        <button
+          onClick={sendMessage}
+          style={{
+            background: "#4CAF50",
+            color: "white",
+            border: "none",
+            padding: "12px 20px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "16px"
+          }}
+        >
+          Send
+        </button>
       </div>
     </div>
   );
