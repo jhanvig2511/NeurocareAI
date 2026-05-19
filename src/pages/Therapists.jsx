@@ -51,15 +51,17 @@ function Therapists() {
         therapist_id: therapistId,
       });
 
-      /* REAL-TIME NOTIFICATION TO DOCTOR */
+      const sessionId = res.data.sessionId;
+
       socket.emit("bookSession", {
         doctorId: String(therapistId),
         user: userName,
         therapistName: therapistName,
+        sessionId: sessionId,
       });
 
       alert(`✅ Session booked with ${therapistName}! Redirecting to chat...`);
-      navigate(`/therapistchat/${res.data.sessionId}`);
+      navigate(`/therapistchat/${sessionId}`);
     } catch (err) {
       console.log(err);
       alert("Booking failed ❌");
@@ -74,7 +76,6 @@ function Therapists() {
         {therapists.map((therapist) => (
           <div className="therapist-card" key={therapist.id}>
             <h2 className="doctor-name">👩‍⚕️ {therapist.name}</h2>
-
             <p><strong>Specialization:</strong> {therapist.specialization}</p>
             <p><strong>Experience:</strong> {therapist.experience}</p>
             <p className="about-text">{therapist.about}</p>
