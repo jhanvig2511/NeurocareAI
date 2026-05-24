@@ -17,9 +17,7 @@ function UserDashboard() {
           <button className="nav-item" onClick={() => navigate("/chat")}>
             AI Chat
           </button>
-          <button onClick={() => navigate("/voicechat")}>
-          🎤 Voice Chat
-          </button>
+         
           <button className="nav-item">History</button>
           <button className="nav-item logout" onClick={() => navigate("/")}>
             Logout
