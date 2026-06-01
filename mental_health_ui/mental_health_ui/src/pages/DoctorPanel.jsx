@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
-import { useNavigate } from "react-router-call";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const BASE_URL = "https://neurocareai-xxrl.onrender.com";
