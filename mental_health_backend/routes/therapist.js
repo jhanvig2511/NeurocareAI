@@ -53,7 +53,7 @@ router.post("/book", (req, res) => {
 });
 
 /* =========================
-   PENDING SESSIONS FOR DOCTOR  ← YEH NAYA HAI
+   PENDING SESSIONS FOR DOCTOR
 ========================= */
 router.get("/pending/:therapistId", (req, res) => {
   const sql = `
@@ -65,7 +65,7 @@ router.get("/pending/:therapistId", (req, res) => {
       u.name AS user_name,
       u.email AS user_email
     FROM therapist_sessions ts
-    LEFT JOIN users u ON ts.user_id = u.id
+    LEFT JOIN users u ON ts.user_id = u.user_id
     WHERE ts.therapist_id = ? AND ts.status = 'pending'
     ORDER BY ts.id DESC
   `;
