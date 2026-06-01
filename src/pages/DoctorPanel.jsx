@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const BASE_URL = "https://neurocareai-xxrl.onrender.com";
 
@@ -8,29 +9,65 @@ function DoctorPanel() {
   const doctor = JSON.parse(localStorage.getItem("doctor"));
   const [bookings, setBookings] = useState([]);
   const [notification, setNotification] = useState(null);
+  const [socketStatus, setSocketStatus] = useState("connecting");
   const navigate = useNavigate();
   const socketRef = useRef(null);
 
+  const addBooking = (data) => {
+    setBookings((prev) => {
+      const exists = prev.find((b) => String(b.sessionId) === String(data.sessionId));
+      if (exists) return prev;
+      return [...prev, data];
+    });
+  };
+
+  // POLLING
   useEffect(() => {
     if (!doctor) return;
 
-    const socket = io(BASE_URL, { transports: ["websocket"] });
+    const pollPendingSessions = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/api/therapist/pending/${doctor.id}`);
+        if (res.data && Array.isArray(res.data)) {
+          res.data.forEach((session) => {
+            addBooking({
+              user: session.user_name || session.user_email || "Patient",
+              sessionId: session.id,
+              doctorId: String(doctor.id),
+            });
+          });
+        }
+      } catch (err) {
+        console.log("Polling error:", err.message);
+      }
+    };
+
+    pollPendingSessions();
+    const interval = setInterval(pollPendingSessions, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // SOCKET
+  useEffect(() => {
+    if (!doctor) return;
+
+    const socket = io(BASE_URL, {
+      transports: ["websocket", "polling"],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
+    });
     socketRef.current = socket;
 
-    socket.emit("doctorOnline", String(doctor.id));
-
     socket.on("connect", () => {
-      console.log("✅ Socket connected:", socket.id);
+      setSocketStatus("connected");
       socket.emit("doctorOnline", String(doctor.id));
     });
 
+    socket.on("connect_error", () => setSocketStatus("error"));
+    socket.on("disconnect", () => setSocketStatus("disconnected"));
+
     socket.on("newBooking", (data) => {
-      console.log("📥 New booking received:", data);
-      setBookings((prev) => {
-        const exists = prev.find((b) => b.sessionId === data.sessionId);
-        if (exists) return prev;
-        return [...prev, data];
-      });
+      addBooking(data);
       setNotification(`${data.user} ne session book kiya!`);
       setTimeout(() => setNotification(null), 5000);
     });
@@ -42,7 +79,12 @@ function DoctorPanel() {
     };
   }, []);
 
-  const acceptBooking = (sessionId) => {
+  const acceptBooking = async (sessionId) => {
+    try {
+      await axios.put(`${BASE_URL}/api/therapist/accept/${sessionId}`);
+    } catch (err) {
+      console.log(err);
+    }
     navigate(`/therapistchat/${sessionId}`);
   };
 
@@ -51,13 +93,24 @@ function DoctorPanel() {
       <h1>👩‍⚕️ {doctor?.name}</h1>
       <h3>Welcome to Doctor Dashboard</h3>
 
+      <div style={{ marginBottom: "10px" }}>
+        <span style={{
+          background: socketStatus === "connected" ? "#4CAF50" : socketStatus === "connecting" ? "#FF9800" : "#f44336",
+          color: "white", padding: "4px 12px", borderRadius: "20px", fontSize: "13px",
+        }}>
+          {socketStatus === "connected" ? "🟢 Live Connected" : socketStatus === "connecting" ? "🟡 Connecting..." : "🔴 Reconnecting..."}
+        </span>
+        <span style={{ marginLeft: "10px", fontSize: "13px", color: "gray" }}>
+          (Auto-refresh every 5s)
+        </span>
+      </div>
+
       {notification && (
         <div style={{
           position: "fixed", top: "20px", right: "20px",
-          background: "#4CAF50", color: "white",
-          padding: "15px 25px", borderRadius: "10px",
-          fontSize: "16px", fontWeight: "bold",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.2)", zIndex: 9999
+          background: "#4CAF50", color: "white", padding: "15px 25px",
+          borderRadius: "10px", fontSize: "16px", fontWeight: "bold",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.2)", zIndex: 9999,
         }}>
           🔔 {notification}
         </div>
@@ -73,27 +126,26 @@ function DoctorPanel() {
       <div style={{ marginTop: "30px" }}>
         <h3>📋 Incoming Bookings {bookings.length > 0 && (
           <span style={{
-            background: "#f44336", color: "white",
-            borderRadius: "50%", padding: "2px 8px",
-            fontSize: "14px", marginLeft: "8px"
+            background: "#f44336", color: "white", borderRadius: "50%",
+            padding: "2px 8px", fontSize: "14px", marginLeft: "8px",
           }}>{bookings.length}</span>
         )}</h3>
 
         {bookings.length === 0 ? (
           <div style={{
             color: "gray", padding: "30px", textAlign: "center",
-            background: "#f9f9f9", borderRadius: "10px", border: "2px dashed #ddd"
+            background: "#f9f9f9", borderRadius: "10px", border: "2px dashed #ddd",
           }}>
             <p style={{ fontSize: "18px" }}>⏳ Waiting for patient bookings...</p>
-            <p style={{ fontSize: "13px" }}>Jab koi patient book karega, yahan card dikhega</p>
+            <p style={{ fontSize: "13px" }}>Auto-refresh har 5 second mein ho raha hai</p>
           </div>
         ) : (
           bookings.map((booking, index) => (
             <div key={booking.sessionId || index} style={{
-              background: "#fff", border: "2px solid #4CAF50",
-              borderRadius: "10px", padding: "20px", marginBottom: "15px",
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-              boxShadow: "0 2px 8px rgba(76,175,80,0.15)"
+              background: "#fff", border: "2px solid #4CAF50", borderRadius: "10px",
+              padding: "20px", marginBottom: "15px", display: "flex",
+              justifyContent: "space-between", alignItems: "center",
+              boxShadow: "0 2px 8px rgba(76,175,80,0.15)",
             }}>
               <div>
                 <p style={{ margin: "5px 0" }}>🧑 <strong>Patient:</strong> {booking.user}</p>
@@ -104,10 +156,9 @@ function DoctorPanel() {
                 onClick={() => acceptBooking(booking.sessionId)}
                 style={{
                   background: "linear-gradient(135deg, #4CAF50, #2e7d32)",
-                  color: "white", border: "none",
-                  padding: "12px 24px", borderRadius: "8px",
-                  cursor: "pointer", fontSize: "16px", fontWeight: "bold",
-                  boxShadow: "0 4px 10px rgba(76,175,80,0.3)"
+                  color: "white", border: "none", padding: "12px 24px",
+                  borderRadius: "8px", cursor: "pointer", fontSize: "16px",
+                  fontWeight: "bold", boxShadow: "0 4px 10px rgba(76,175,80,0.3)",
                 }}
               >
                 ✅ Accept & Chat
