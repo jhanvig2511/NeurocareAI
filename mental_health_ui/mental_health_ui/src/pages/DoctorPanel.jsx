@@ -12,6 +12,7 @@ function DoctorPanel() {
   const [socketStatus, setSocketStatus] = useState("connecting");
   const navigate = useNavigate();
   const socketRef = useRef(null);
+  const doctorId = doctor?.id;
 
   const addBooking = (data) => {
     setBookings((prev) => {
@@ -21,17 +22,18 @@ function DoctorPanel() {
     });
   };
 
+  // POLLING
   useEffect(() => {
-    if (!doctor) return;
+    if (!doctorId) return;
     const pollPendingSessions = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/api/therapist/pending/${doctor.id}`);
+        const res = await axios.get(`${BASE_URL}/api/therapist/pending/${doctorId}`);
         if (res.data && Array.isArray(res.data)) {
           res.data.forEach((session) => {
             addBooking({
               user: session.user_name || session.user_email || "Patient",
               sessionId: session.id,
-              doctorId: String(doctor.id),
+              doctorId: String(doctorId),
             });
           });
         }
@@ -42,10 +44,11 @@ function DoctorPanel() {
     pollPendingSessions();
     const interval = setInterval(pollPendingSessions, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [doctorId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // SOCKET
   useEffect(() => {
-    if (!doctor) return;
+    if (!doctorId) return;
     const socket = io(BASE_URL, {
       transports: ["websocket", "polling"],
       reconnectionAttempts: 10,
@@ -54,7 +57,7 @@ function DoctorPanel() {
     socketRef.current = socket;
     socket.on("connect", () => {
       setSocketStatus("connected");
-      socket.emit("doctorOnline", String(doctor.id));
+      socket.emit("doctorOnline", String(doctorId));
     });
     socket.on("connect_error", () => setSocketStatus("error"));
     socket.on("disconnect", () => setSocketStatus("disconnected"));
@@ -68,7 +71,7 @@ function DoctorPanel() {
       socket.off("connect");
       socket.disconnect();
     };
-  }, []);
+  }, [doctorId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const acceptBooking = async (sessionId) => {
     try {
@@ -90,6 +93,9 @@ function DoctorPanel() {
           color: "white", padding: "4px 12px", borderRadius: "20px", fontSize: "13px",
         }}>
           {socketStatus === "connected" ? "🟢 Live Connected" : socketStatus === "connecting" ? "🟡 Connecting..." : "🔴 Reconnecting..."}
+        </span>
+        <span style={{ marginLeft: "10px", fontSize: "13px", color: "gray" }}>
+          (Auto-refresh every 5s)
         </span>
       </div>
 
@@ -125,6 +131,7 @@ function DoctorPanel() {
             background: "#f9f9f9", borderRadius: "10px", border: "2px dashed #ddd",
           }}>
             <p style={{ fontSize: "18px" }}>⏳ Waiting for patient bookings...</p>
+            <p style={{ fontSize: "13px" }}>Auto-refresh har 5 second mein ho raha hai</p>
           </div>
         ) : (
           bookings.map((booking, index) => (
@@ -145,7 +152,7 @@ function DoctorPanel() {
                   background: "linear-gradient(135deg, #4CAF50, #2e7d32)",
                   color: "white", border: "none", padding: "12px 24px",
                   borderRadius: "8px", cursor: "pointer", fontSize: "16px",
-                  fontWeight: "bold",
+                  fontWeight: "bold", boxShadow: "0 4px 10px rgba(76,175,80,0.3)",
                 }}
               >
                 ✅ Accept & Chat
