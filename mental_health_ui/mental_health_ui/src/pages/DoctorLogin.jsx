@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+const BASE_URL = "https://neurocareai-xxrl.onrender.com";
+
 function DoctorLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,12 +18,15 @@ function DoctorLogin() {
 
     try {
       const res = await axios.post(
-        "https://neurocareai-xxrl.onrender.com/api/therapist/doctor-login",
+        `${BASE_URL}/api/therapist/doctor-login`,
         { email, password },
         { withCredentials: true }
       );
 
       if (res.data.success) {
+        // ✅ Clear user key so sender is never confused
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
         localStorage.setItem("doctor", JSON.stringify(res.data.doctor));
         navigate("/doctor");
       } else {
@@ -48,7 +53,6 @@ function DoctorLogin() {
         onChange={(e) => setEmail(e.target.value)}
         style={{ display: "block", marginBottom: "10px", width: "100%", padding: "8px" }}
       />
-
       <input
         type="password"
         placeholder="Password"
@@ -56,7 +60,6 @@ function DoctorLogin() {
         onChange={(e) => setPassword(e.target.value)}
         style={{ display: "block", marginBottom: "10px", width: "100%", padding: "8px" }}
       />
-
       <button
         onClick={login}
         disabled={loading}

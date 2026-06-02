@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../styles/login.css";
 
-/* 🌐 BACKEND URL */
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || "https://neurocareai-xxrl.onrender.com";
+const BASE_URL = "https://neurocareai-xxrl.onrender.com";
 
 function Login() {
   const [role, setRole] = useState("user");
@@ -21,25 +20,16 @@ function Login() {
     try {
       const res = await axios.post(
         `${BASE_URL}/api/auth/login`,
-        {
-          email,
-          password,
-          role,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          timeout: 10000, // prevents infinite waiting
-        }
+        { email, password, role },
+        { headers: { "Content-Type": "application/json" }, timeout: 10000 }
       );
 
       if (res.data && res.data.token) {
-        /* SAVE TOKEN */
+        // ✅ Clear doctor key so sender is never confused
+        localStorage.removeItem("doctor");
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("user", JSON.stringify(res.data.user));
 
-        /* REDIRECT */
         if (role === "user") {
           navigate("/user-dashboard");
         } else {
@@ -48,10 +38,8 @@ function Login() {
       } else {
         alert("Invalid server response ❌");
       }
-
     } catch (err) {
       console.log("Login Error:", err);
-
       if (err.code === "ECONNABORTED") {
         alert("Server timeout ❌ Please try again");
       } else if (err.response) {
@@ -59,7 +47,6 @@ function Login() {
       } else {
         alert("Server not reachable ❌ Check backend or internet");
       }
-
     } finally {
       setLoading(false);
     }
@@ -68,17 +55,14 @@ function Login() {
   return (
     <div className="login-container">
 
-      {/* LEFT SIDE */}
       <div className="login-left">
         <h1>Welcome Back 🌱</h1>
-        <p>Take a breath. You’re entering a safe and supportive space.</p>
+        <p>Take a breath. You're entering a safe and supportive space.</p>
       </div>
 
-      {/* RIGHT SIDE */}
       <div className="login-right">
         <div className="login-card">
 
-          {/* ROLE TOGGLE */}
           <div className="role-toggle">
             <button
               type="button"
@@ -87,7 +71,6 @@ function Login() {
             >
               User
             </button>
-
             <button
               type="button"
               className={role === "admin" ? "active" : ""}
@@ -107,7 +90,6 @@ function Login() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-
             <input
               type="password"
               placeholder="Password"
@@ -115,7 +97,6 @@ function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
             </button>

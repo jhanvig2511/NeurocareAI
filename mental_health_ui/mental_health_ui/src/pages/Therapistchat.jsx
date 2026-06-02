@@ -163,7 +163,8 @@ function TherapistChat() {
                 boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
               }}>
                 <small style={{ opacity: 0.65, fontSize: "11px", display: "block", marginBottom: "4px" }}>
-                  {msg.sender === "doctor" ? "👩‍⚕️ Doctor" : "🧑 Patient"}
+                  {/* ✅ Shows "You" for your own, correct role for other person */}
+                  {isMe ? "✅ You" : msg.sender === "doctor" ? "👩‍⚕️ Doctor" : "🧑 Patient"}
                 </small>
                 <p style={{ margin: 0, fontSize: "15px", lineHeight: "1.5" }}>{msg.message}</p>
                 {msg.created_at && (
