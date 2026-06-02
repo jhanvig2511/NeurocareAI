@@ -13,7 +13,8 @@ function TherapistChat() {
   const [connected, setConnected] = useState(false);
   const bottomRef = useRef(null);
   const socketRef = useRef(null);
-  const seenKeys = useRef(new Set());
+  // Tracks messages WE just sent so we skip the socket echo of our own messages
+  const pendingSent = useRef(new Set());
 
   const doctor = JSON.parse(localStorage.getItem("doctor") || "null");
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -22,20 +23,12 @@ function TherapistChat() {
     ? `👩‍⚕️ Dr. ${doctor.name}`
     : `🧑 ${user?.name || user?.email || "Patient"}`;
 
-  const addMessage = (msg) => {
-    const key = msg.id
-      ? `db-${msg.id}`
-      : `live-${msg.sender}-${msg.message}`;
-    if (seenKeys.current.has(key)) return;
-    seenKeys.current.add(key);
-    setMessages((prev) => [...prev, msg]);
-  };
-
+  // Load existing messages from DB once on mount
   const fetchMessages = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/api/therapist/messages/${sessionId}`);
       if (Array.isArray(res.data)) {
-        res.data.forEach((msg) => addMessage(msg));
+        setMessages(res.data);
       }
     } catch (err) {
       console.error("Fetch error:", err.message);
@@ -44,6 +37,8 @@ function TherapistChat() {
 
   useEffect(() => {
     if (!sessionId) return;
+
+    fetchMessages();
 
     const socket = io(BASE_URL, {
       transports: ["websocket", "polling"],
@@ -61,14 +56,25 @@ function TherapistChat() {
     socket.on("disconnect", () => setConnected(false));
 
     socket.on("receiveMessage", (data) => {
-      addMessage({
-        sender: data.sender,
-        message: data.message,
-        created_at: new Date().toISOString(),
-      });
-    });
+      const key = `${data.sender}::${data.message}`;
 
-    fetchMessages();
+      // If this is our own message echoed back by the server, skip it
+      // (we already added it optimistically)
+      if (pendingSent.current.has(key)) {
+        pendingSent.current.delete(key);
+        return;
+      }
+
+      // Otherwise it's from the OTHER person — add it to the chat
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: data.sender,
+          message: data.message,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    });
 
     return () => {
       socket.off("receiveMessage");
@@ -87,12 +93,20 @@ function TherapistChat() {
     const text = input.trim();
     setInput("");
 
-    addMessage({
-      sender,
-      message: text,
-      created_at: new Date().toISOString(),
-    });
+    // Register this as a pending sent message so socket echo is ignored
+    pendingSent.current.add(`${sender}::${text}`);
 
+    // Add to UI immediately (optimistic)
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender,
+        message: text,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    // Broadcast to the room so the OTHER person receives it live
     if (socketRef.current?.connected) {
       socketRef.current.emit("sendMessage", {
         roomId: String(sessionId),
@@ -102,6 +116,7 @@ function TherapistChat() {
       });
     }
 
+    // Persist to DB
     try {
       await axios.post(`${BASE_URL}/api/therapist/message`, {
         session_id: sessionId,
