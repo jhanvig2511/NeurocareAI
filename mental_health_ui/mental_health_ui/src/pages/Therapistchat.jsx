@@ -13,7 +13,6 @@ function TherapistChat() {
   const [connected, setConnected] = useState(false);
   const bottomRef = useRef(null);
   const socketRef = useRef(null);
-  // Tracks messages WE just sent so we skip the socket echo of our own messages
   const pendingSent = useRef(new Set());
 
   const doctor = JSON.parse(localStorage.getItem("doctor") || "null");
@@ -23,7 +22,6 @@ function TherapistChat() {
     ? `👩‍⚕️ Dr. ${doctor.name}`
     : `🧑 ${user?.name || user?.email || "Patient"}`;
 
-  // Load existing messages from DB once on mount
   const fetchMessages = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/api/therapist/messages/${sessionId}`);
@@ -57,15 +55,10 @@ function TherapistChat() {
 
     socket.on("receiveMessage", (data) => {
       const key = `${data.sender}::${data.message}`;
-
-      // If this is our own message echoed back by the server, skip it
-      // (we already added it optimistically)
       if (pendingSent.current.has(key)) {
         pendingSent.current.delete(key);
         return;
       }
-
-      // Otherwise it's from the OTHER person — add it to the chat
       setMessages((prev) => [
         ...prev,
         {
@@ -93,20 +86,13 @@ function TherapistChat() {
     const text = input.trim();
     setInput("");
 
-    // Register this as a pending sent message so socket echo is ignored
     pendingSent.current.add(`${sender}::${text}`);
 
-    // Add to UI immediately (optimistic)
     setMessages((prev) => [
       ...prev,
-      {
-        sender,
-        message: text,
-        created_at: new Date().toISOString(),
-      },
+      { sender, message: text, created_at: new Date().toISOString() },
     ]);
 
-    // Broadcast to the room so the OTHER person receives it live
     if (socketRef.current?.connected) {
       socketRef.current.emit("sendMessage", {
         roomId: String(sessionId),
@@ -116,7 +102,6 @@ function TherapistChat() {
       });
     }
 
-    // Persist to DB
     try {
       await axios.post(`${BASE_URL}/api/therapist/message`, {
         session_id: sessionId,
@@ -131,7 +116,6 @@ function TherapistChat() {
   return (
     <div style={{ maxWidth: "700px", margin: "30px auto", fontFamily: "sans-serif", padding: "0 16px" }}>
 
-      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
         <div>
           <h2 style={{ margin: 0 }}>💬 Therapist Chat</h2>
@@ -155,7 +139,6 @@ function TherapistChat() {
         </div>
       </div>
 
-      {/* Messages Box */}
       <div style={{
         height: "500px", overflowY: "auto", border: "1px solid #ddd",
         borderRadius: "12px", padding: "16px", background: "#f9f9f9",
@@ -166,14 +149,10 @@ function TherapistChat() {
             No messages yet. Say hello! 👋
           </p>
         )}
-
         {messages.map((msg, index) => {
           const isMe = msg.sender === sender;
           return (
-            <div key={index} style={{
-              display: "flex",
-              justifyContent: isMe ? "flex-end" : "flex-start",
-            }}>
+            <div key={index} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start" }}>
               <div style={{
                 background: isMe ? "#4CAF50" : "#ffffff",
                 color: isMe ? "white" : "#222",
@@ -199,7 +178,6 @@ function TherapistChat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div style={{ display: "flex", gap: "10px" }}>
         <input
           value={input}

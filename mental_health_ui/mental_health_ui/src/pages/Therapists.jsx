@@ -4,10 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/therapist.css";
 
-// ✅ FIXED: Use same backend URL as Login & Register
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || "https://neurocare-backend-3k89.onrender.com";
+// ✅ Same backend as DoctorPanel and TherapistChat
+const BASE_URL = "https://neurocareai-xxrl.onrender.com";
 
-// ✅ Socket connection (lazy — only created once)
 let socket;
 function getSocket() {
   if (!socket) socket = io(BASE_URL);
@@ -16,8 +15,8 @@ function getSocket() {
 
 function Therapists() {
   const [therapists, setTherapists] = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,7 +40,6 @@ function Therapists() {
     if (!slot) return false;
     const now = new Date();
     const currentHour = now.getHours();
-
     const [start, end] = slot.split("-");
 
     const convertTo24Hour = (time) => {
@@ -52,26 +50,25 @@ function Therapists() {
     };
 
     const startHour = convertTo24Hour(start.trim());
-    const endHour   = convertTo24Hour(end.trim());
-
+    const endHour = convertTo24Hour(end.trim());
     return currentHour >= startHour && currentHour < endHour;
   };
 
   const bookSession = async (therapistId) => {
     try {
-      // ✅ Get user_id from localStorage (set during login)
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       const userId = user.id || 1;
 
       const res = await axios.post(`${BASE_URL}/api/therapist/book`, {
-        user_id:      userId,
+        user_id: userId,
         therapist_id: therapistId,
       });
 
-      // Real-time notification
+      // Notify doctor in real time
       getSocket().emit("bookSession", {
         doctorId: therapistId,
-        user:     user.name || "Patient",
+        user: user.name || "Patient",
+        sessionId: res.data.sessionId,
       });
 
       navigate(`/therapistchat/${res.data.sessionId}`);
@@ -82,7 +79,7 @@ function Therapists() {
   };
 
   if (loading) return <div className="therapist-page"><p>Loading therapists...</p></div>;
-  if (error)   return <div className="therapist-page"><p style={{color:"red"}}>{error}</p></div>;
+  if (error) return <div className="therapist-page"><p style={{ color: "red" }}>{error}</p></div>;
 
   return (
     <div className="therapist-page">
@@ -95,16 +92,13 @@ function Therapists() {
           {therapists.map((therapist) => (
             <div className="therapist-card" key={therapist.id}>
               <h2 className="doctor-name">👩‍⚕️ {therapist.name}</h2>
-
               <p><strong>Specialization:</strong> {therapist.specialization}</p>
               <p><strong>Experience:</strong> {therapist.experience}</p>
               <p className="about-text">{therapist.about}</p>
               <p>🕒 <strong>Available:</strong> {therapist.slots}</p>
-
               <p className={checkAvailability(therapist.slots) ? "online" : "offline"}>
                 {checkAvailability(therapist.slots) ? "🟢 Online" : "🔴 Offline"}
               </p>
-
               <button
                 className="book-btn"
                 disabled={!checkAvailability(therapist.slots)}
