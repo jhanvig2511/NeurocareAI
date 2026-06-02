@@ -58,10 +58,16 @@ io.on("connection", (socket) => {
 
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
+    console.log(`Socket ${socket.id} joined room ${roomId}`);
   });
 
+  // ✅ Forward fromSocketId so sender can skip their own echo
   socket.on("sendMessage", (data) => {
-    io.to(data.roomId).emit("receiveMessage", data);
+    io.to(data.roomId).emit("receiveMessage", {
+      sender: data.sender,
+      message: data.message,
+      fromSocketId: data.fromSocketId,
+    });
   });
 
   socket.on("disconnect", () => {
