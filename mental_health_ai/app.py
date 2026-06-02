@@ -6,14 +6,14 @@ from autocorrect import Speller
 import emoji
 import re
 
-# =========================
+# =====================================
 # APP SETUP
-# =========================
-app = FastAPI(title="NeuroCare AI Chat Bot")
+# =====================================
+app = FastAPI(title="NeuroCare AI Chatbot")
 
-# =========================
-# 🌐 CORS (PRODUCTION READY)
-# =========================
+# =====================================
+# CORS
+# =====================================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -26,9 +26,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# =========================
-# MODELS
-# =========================
+# =====================================
+# EMOTION MODEL
+# =====================================
 emotion_model = pipeline(
     "text-classification",
     model="SamLowe/roberta-base-go_emotions",
@@ -37,35 +37,51 @@ emotion_model = pipeline(
 
 spell = Speller(lang="en")
 
-# =========================
-# INPUT SCHEMA
-# =========================
+# =====================================
+# REQUEST MODEL
+# =====================================
 class Message(BaseModel):
     session_id: str | None = None
     message: str
 
-# =========================
-# CONSTANTS
-# =========================
+# =====================================
+# GREETINGS
+# =====================================
+GREETINGS = [
+    "hi",
+    "hello",
+    "hey",
+    "good morning",
+    "good afternoon",
+    "good evening",
+]
+
+# =====================================
+# CRISIS KEYWORDS
+# =====================================
 CRISIS_WORDS = [
-    "suicide", "kill myself", "end my life",
-    "want to die", "die", "hopeless",
-    "no reason to live"
+    "suicide",
+    "kill myself",
+    "end my life",
+    "want to die",
+    "die",
+    "hopeless",
+    "no reason to live",
 ]
 
-CONTACT_KEYWORDS = [
-    "doctor", "psychiatrist", "counsellor",
-    "contact", "help number", "phone",
-    "call", "consult"
-]
-
+# =====================================
+# SHARE KEYWORDS
+# =====================================
 SHARE_KEYWORDS = [
-    "share", "tell something", "i want to talk", "i want to say"
+    "share",
+    "i want to talk",
+    "i want to say",
+    "tell you something",
 ]
 
-# =========================
+# =====================================
 # PREPROCESSING
-# =========================
+# =====================================
 def preprocess(text: str) -> str:
     text = text.lower()
     text = spell(text)
@@ -73,80 +89,123 @@ def preprocess(text: str) -> str:
     text = re.sub(r"(.)\1{2,}", r"\1", text)
     return text.strip()
 
-# =========================
+# =====================================
 # HELPERS
-# =========================
-def is_crisis(text: str) -> bool:
+# =====================================
+def is_crisis(text: str):
     return any(word in text for word in CRISIS_WORDS)
 
-def is_asking_for_contact(text: str) -> bool:
-    return any(word in text for word in CONTACT_KEYWORDS)
-
-def user_wants_to_share(text: str) -> bool:
+def user_wants_to_share(text: str):
     return any(word in text for word in SHARE_KEYWORDS)
 
-# =========================
-# CONTACT INFO
-# =========================
-def psychiatrist_contact():
-    return (
-        "🧑‍⚕️ Psychiatrist Contact:\n"
-        "• Dr. Lovely Verma\n"
-        "• 📞 +91 9717101995"
-    )
-
-def counsellor_contact():
-    return (
-        "🚨 Crisis Support:\n"
-        "• Dr. Shivam Mehta\n"
-        "• 📞 +91 9667978445"
-    )
-
-# =========================
+# =====================================
 # RESPONSE ENGINE
-# =========================
-def generate_response(text: str, emotion: str) -> str:
+# =====================================
+def generate_response(text, emotion):
 
     if is_crisis(text):
         return (
-            "I'm really sorry you're feeling this way. 💔\n"
-            "You matter. Please reach out:\n\n"
-            + counsellor_contact()
+            "I'm really sorry you're feeling this way. 💛 "
+            "You matter and your feelings are important. "
+            "Please consider reaching out to someone you trust and seek immediate support."
         )
 
     if user_wants_to_share(text):
-        return "I'm here for you 💛 Tell me anything."
-
-    if is_asking_for_contact(text):
-        return psychiatrist_contact()
+        return (
+            "I'm listening. 💙 "
+            "Take your time and tell me whatever is on your mind."
+        )
 
     if emotion == "sadness":
-        return "I'm here for you 💛 Try talking to someone you trust or take a small break."
+        return (
+            "I can sense some sadness in your words. 💛 "
+            "Be kind to yourself today. "
+            "A short walk, journaling, or talking with someone you trust may help."
+        )
 
-    if emotion == "fear":
-        return "Try deep breathing. You are safe right now."
+    elif emotion == "fear":
+        return (
+            "It sounds like something may be worrying you. 🌿 "
+            "Try focusing on one thing you can control right now and take a few slow breaths."
+        )
 
-    if emotion == "anger":
-        return "Pause and take slow breaths. Step away for a moment."
+    elif emotion == "anger":
+        return (
+            "I understand you're feeling frustrated. ❤️ "
+            "Giving yourself a few minutes to pause and breathe can help clear your thoughts."
+        )
 
-    if emotion == "joy":
-        return "That's wonderful 😄 Keep going!"
+    elif emotion == "joy":
+        return (
+            "That's wonderful to hear! 😄 "
+            "Take a moment to appreciate what's going well and enjoy the positive moment."
+        )
 
-    return "You're doing okay. Take things one step at a time 🌿"
+    elif emotion == "nervousness":
+        return (
+            "Feeling nervous is completely normal. 🌱 "
+            "Focus on the present moment and take things one step at a time."
+        )
 
-# =========================
-# CHAT ROUTE
-# =========================
+    elif emotion == "disappointment":
+        return (
+            "That sounds disappointing. 💙 "
+            "Remember that setbacks happen to everyone and don't define your future."
+        )
+
+    elif emotion == "loneliness":
+        return (
+            "Feeling lonely can be difficult. 🤗 "
+            "Connecting with someone you trust or doing an activity you enjoy may help."
+        )
+
+    elif emotion == "gratitude":
+        return (
+            "It's wonderful to feel grateful. 🌸 "
+            "Holding onto those positive moments can improve overall well-being."
+        )
+
+    elif emotion == "love":
+        return (
+            "Love and connection are powerful emotions. ❤️ "
+            "Cherish those meaningful relationships in your life."
+        )
+
+    else:
+        return (
+            "Thank you for sharing. 🌿 "
+            "Take things one step at a time and remember to take care of yourself today."
+        )
+
+# =====================================
+# CHAT API
+# =====================================
 @app.post("/chat")
 def chat(data: Message):
 
     raw_text = data.message
     clean_text = preprocess(raw_text)
 
+    # Greeting response
+    if clean_text in GREETINGS:
+        return {
+            "emotion": "greeting",
+            "bot": (
+                "Hello! 🌱 I'm NeuroCare AI. "
+                "How are you feeling today?"
+            )
+        }
+
     try:
         result = emotion_model(clean_text)[0]
-        emotion = max(result, key=lambda x: x["score"])["label"]
-    except Exception:
+
+        emotion = max(
+            result,
+            key=lambda x: x["score"]
+        )["label"]
+
+    except Exception as e:
+        print("Emotion Error:", e)
         emotion = "neutral"
 
     reply = generate_response(clean_text, emotion)
@@ -156,9 +215,11 @@ def chat(data: Message):
         "bot": reply
     }
 
-# =========================
-# ROOT
-# =========================
+# =====================================
+# HEALTH CHECK
+# =====================================
 @app.get("/")
 def home():
-    return {"status": "NeuroCare AI Bot Running 🚀"}
+    return {
+        "status": "NeuroCare AI Running 🚀"
+    }
