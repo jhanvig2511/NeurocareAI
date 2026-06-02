@@ -13,7 +13,6 @@ function TherapistChat() {
   const [connected, setConnected] = useState(false);
   const bottomRef = useRef(null);
   const socketRef = useRef(null);
-  const mySocketId = useRef(null);
 
   const doctor = JSON.parse(localStorage.getItem("doctor") || "null");
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -46,16 +45,15 @@ function TherapistChat() {
 
     socket.on("connect", () => {
       setConnected(true);
-      mySocketId.current = socket.id;
       socket.emit("joinRoom", String(sessionId));
     });
 
     socket.on("connect_error", () => setConnected(false));
     socket.on("disconnect", () => setConnected(false));
 
-    // ✅ Server sends fromSocketId — skip if it's our own message
     socket.on("receiveMessage", (data) => {
-      if (data.fromSocketId === socket.id) return; // skip our own echo
+      // skip our own echo using socket ID
+      if (data.fromSocketId === socket.id) return;
       setMessages((prev) => [
         ...prev,
         {
@@ -86,18 +84,16 @@ function TherapistChat() {
       { sender, message: text, created_at: new Date().toISOString() },
     ]);
 
-    // Emit with our socket ID so server can send it back and we skip it
     if (socketRef.current?.connected) {
       socketRef.current.emit("sendMessage", {
         roomId: String(sessionId),
         session_id: sessionId,
         sender,
         message: text,
-        fromSocketId: socketRef.current.id, // ✅ key field
+        fromSocketId: socketRef.current.id,
       });
     }
 
-    // Save to DB
     try {
       await axios.post(`${BASE_URL}/api/therapist/message`, {
         session_id: sessionId,
