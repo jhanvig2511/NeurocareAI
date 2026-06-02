@@ -13,8 +13,7 @@ function TherapistChat() {
   const [connected, setConnected] = useState(false);
   const bottomRef = useRef(null);
   const socketRef = useRef(null);
-  // Store unique message IDs we sent ourselves
-  const pendingSent = useRef(new Set());
+  const mySocketId = useRef(null);
 
   const doctor = JSON.parse(localStorage.getItem("doctor") || "null");
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -23,21 +22,20 @@ function TherapistChat() {
     ? `👩‍⚕️ Dr. ${doctor.name}`
     : `🧑 ${user?.name || user?.email || "Patient"}`;
 
-  const fetchMessages = async () => {
-    try {
-      const res = await axios.get(`${BASE_URL}/api/therapist/messages/${sessionId}`);
-      if (Array.isArray(res.data)) {
-        setMessages(res.data);
-      }
-    } catch (err) {
-      console.error("Fetch error:", err.message);
-    }
-  };
-
+  // Load history from DB once
   useEffect(() => {
     if (!sessionId) return;
+    axios
+      .get(`${BASE_URL}/api/therapist/messages/${sessionId}`)
+      .then((res) => {
+        if (Array.isArray(res.data)) setMessages(res.data);
+      })
+      .catch((err) => console.error("Fetch error:", err.message));
+  }, [sessionId]);
 
-    fetchMessages();
+  // Socket setup
+  useEffect(() => {
+    if (!sessionId) return;
 
     const socket = io(BASE_URL, {
       transports: ["websocket", "polling"],
@@ -48,20 +46,16 @@ function TherapistChat() {
 
     socket.on("connect", () => {
       setConnected(true);
+      mySocketId.current = socket.id;
       socket.emit("joinRoom", String(sessionId));
     });
 
     socket.on("connect_error", () => setConnected(false));
     socket.on("disconnect", () => setConnected(false));
 
+    // ✅ Server sends fromSocketId — skip if it's our own message
     socket.on("receiveMessage", (data) => {
-      // ✅ Use unique msgId to detect our own echo, not sender::text
-      if (data.msgId && pendingSent.current.has(data.msgId)) {
-        pendingSent.current.delete(data.msgId);
-        return;
-      }
-
-      // Message is from the OTHER person — add it
+      if (data.fromSocketId === socket.id) return; // skip our own echo
       setMessages((prev) => [
         ...prev,
         {
@@ -73,12 +67,9 @@ function TherapistChat() {
     });
 
     return () => {
-      socket.off("receiveMessage");
-      socket.off("connect");
-      socket.off("disconnect");
       socket.disconnect();
     };
-  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -89,28 +80,24 @@ function TherapistChat() {
     const text = input.trim();
     setInput("");
 
-    // ✅ Unique ID for this specific message so echo detection never collides
-    const msgId = `${sender}-${Date.now()}-${Math.random()}`;
-    pendingSent.current.add(msgId);
-
-    // Add to our own UI immediately
+    // Add to own UI immediately
     setMessages((prev) => [
       ...prev,
       { sender, message: text, created_at: new Date().toISOString() },
     ]);
 
-    // Emit to room — other person receives it via receiveMessage
+    // Emit with our socket ID so server can send it back and we skip it
     if (socketRef.current?.connected) {
       socketRef.current.emit("sendMessage", {
         roomId: String(sessionId),
         session_id: sessionId,
         sender,
         message: text,
-        msgId, // ✅ server must forward this back so we can skip our own echo
+        fromSocketId: socketRef.current.id, // ✅ key field
       });
     }
 
-    // Persist to DB
+    // Save to DB
     try {
       await axios.post(`${BASE_URL}/api/therapist/message`, {
         session_id: sessionId,
@@ -173,11 +160,7 @@ function TherapistChat() {
                 boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
               }}>
                 <small style={{ opacity: 0.65, fontSize: "11px", display: "block", marginBottom: "4px" }}>
-                  {isMe
-                    ? "✅ You"
-                    : msg.sender === "doctor"
-                    ? "👩‍⚕️ Doctor"
-                    : "🧑 Patient"}
+                  {isMe ? "✅ You" : msg.sender === "doctor" ? "👩‍⚕️ Doctor" : "🧑 Patient"}
                 </small>
                 <p style={{ margin: 0, fontSize: "15px", lineHeight: "1.5" }}>{msg.message}</p>
                 {msg.created_at && (
