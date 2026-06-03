@@ -4,6 +4,8 @@ const db = require('../db');
 
 const router = express.Router();
 
+const AI_URL = process.env.AI_URL || "http://localhost:8000";
+
 // Chat endpoint
 router.post("/", async (req, res) => {
   const { user_id, message } = req.body;
@@ -12,13 +14,17 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ message: "Missing user_id or message" });
 
   try {
-    // Send message to AI model API (for now, simulated response)
-    const aiResponse = await getAIResponse(message);
+    // Call the Python AI model
+    const aiRes = await axios.post(`${AI_URL}/chat`, {
+      session_id: String(user_id),
+      message: message,
+    });
 
-    // Store in DB (optional)
+    const { bot: aiResponse, emotion } = aiRes.data;
+
     const sql =
       "INSERT INTO chat_history (user_id, session_id, message, sender, created_at) VALUES (?, ?, ?, ?, NOW())";
-    
+
     // Store user message
     db.query(sql, [user_id, 'default-session', message, 'user'], (err) => {
       if (err) console.error("DB insert error:", err);
@@ -29,10 +35,14 @@ router.post("/", async (req, res) => {
       if (err) console.error("DB insert error:", err);
     });
 
-    res.json({ reply: aiResponse });
+    res.json({ reply: aiResponse, emotion });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Chat error" });
+    console.error("AI service error:", error.message);
+    res.json({
+      reply: "I'm here for you 💙 It seems I'm having a little trouble right now. Please try again in a moment.",
+      emotion: "neutral"
+    });
   }
 });
 
@@ -40,37 +50,16 @@ router.post("/", async (req, res) => {
 router.get("/history/:userId", (req, res) => {
   const { userId } = req.params;
 
-  try {
-    const sql = `
-      SELECT * FROM chat_history
-      WHERE user_id = ?
-      ORDER BY created_at ASC
-    `;
+  const sql = `
+    SELECT * FROM chat_history
+    WHERE user_id = ?
+    ORDER BY created_at ASC
+  `;
 
-    db.query(sql, [userId], (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      res.json(results);
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  db.query(sql, [userId], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
 });
-
-async function getAIResponse(userMessage) {
-  // TEMP SIMULATION — later we'll integrate Python AI model
-  if (userMessage.toLowerCase().includes("sad"))
-    return "I'm sorry you're feeling down. Try some deep breathing exercises.";
-  if (userMessage.toLowerCase().includes("happy"))
-    return "That's great! Keep up the positive energy.";
-  if (userMessage.toLowerCase().includes("stress"))
-    return "Stress can be overwhelming. Would you like to try a 5-minute meditation?";
-  if (userMessage.toLowerCase().includes("anxious") || userMessage.toLowerCase().includes("anxiety"))
-    return "Anxiety is challenging. Let's focus on grounding techniques. Can you name 5 things you can see right now?";
-  
-  return "I understand. Would you like me to suggest some self-care tips?";
-}
 
 module.exports = router;
